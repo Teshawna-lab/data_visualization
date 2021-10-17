@@ -1,0 +1,173 @@
+---
+title: "Visualization"
+subtitle: "Part I" 
+output: github_document
+---
+
+```{r setup}
+library(tidyverse)
+library(ggridges)
+```
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USC00519397", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USC00519397 = "Waikiki_HA",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+
+weather_df
+```
+
+
+## Scatterplots
+```{r}
+ggplot(weather_df, aes(x = tmin, y = tmax)) + 
+  geom_point()
+```
+
+## new approach, same plot
+```{r}
+weather_df %>% # with this option, you can mutate, basically work with data and then plot.
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point()
+```
+
+Save and edit plot object.
+```{r}
+weaather_plot =
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point()
+
+weaather_plot + geom_point()
+```
+
+
+##Advanced scatterplot
+Start with the same one and make it fancy:
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax, color = name)) + #by adding the color = name you get some variation
+  geom_point() + 
+  geom_smooth(se = FALSE)
+```
+
+
+What about the aes placement? 
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name))
+```
+
+Let's facet some things!!
+```{r}
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax, color = name)) + #by adding the color = name you get some variation
+  geom_point(alpha = .5, size = 0.8) + #alpha level is the transparency, 50% transparency  
+  geom_smooth(se = FALSE) + 
+  facet_grid(.~ name) #dot means nothing specifies rows, and name defines columns.
+```
+
+
+Let's combine some elements and try a new plot 
+```{r}
+weather_df %>% 
+  ggplot(aes(x = date, y = tmax, color = name)) +
+  geom_point(aes(size = prcp), alpha = .5) +
+  geom_smooth(se = FALSE) +
+  facet_grid(.~ name)
+```
+
+## Some small notes 
+How many geoms have to exist?
+You can have whatever geoms you want but this may not be a good idea..
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_smooth(se = FALSE)
+```
+
+
+You can use a neat geom 
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_hex()
+```
+
+## Univariate plots
+
+Histograms are really great 
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin)) + 
+  geom_histogram()
+```
+
+Can you add a color to a histogram? 
+There are a couple of issues the color is behind the bar and the data isn't as appealing visually if you just use color = name.
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, fill = name)) + 
+  geom_histogram(position = "dodge") #instead of stacking, it dodges
+```
+
+Rather than worrying about positions, it may be easier to just use a facet grid
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, fill = name)) + 
+  geom_histogram() + 
+  facet_grid(. ~ name)
+```
+
+Let's try a new geometry (helps with comparing the shapes of the distributions)
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, fill = name)) + 
+  geom_density(alpha = 0.3) 
+```
+
+What about box plots? 
+```{r}
+weather_df %>% 
+  ggplot(aes(x = name, y = tmin)) +
+  geom_boxplot()
+```
+
+Trendy plots
+```{r}
+weather_df %>% 
+  ggplot(aes(x = name, y = tmin, fill = name)) + 
+  geom_violin(alpha = .5) + 
+  stat_summary(fun = "median")
+```
+
+Ridge plots 
+```{r}
+weather_df %>% 
+  ggplot(aes(x = tmin, y = name)) + 
+  geom_density_ridges()
+```
+
+
+Saving plots 
+```{r}
+weather_plot = 
+weather_df %>%
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point(aes(color = name))
+
+ggsave("weather_plot.pdf")
+```
